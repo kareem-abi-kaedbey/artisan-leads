@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f5ef;
+  --foreground: #302b25;
 }
 
 @theme inline {
@@ -12,15 +12,169 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+section[id] { scroll-margin-top: 2rem; }
+::selection { background: #d8cfbf; color: #252723; }
+a:focus-visible { outline: 2px solid currentColor; outline-offset: 5px; }
+
+@layer components {
+  .page-width { @apply mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-12; }
+  .eyebrow { @apply text-[10px] font-semibold uppercase tracking-[0.16em] sm:text-[11px]; }
+  .section-title { @apply text-[2rem] leading-[1.08] font-normal tracking-[-0.035em] lg:text-[2.65rem]; font-family: Georgia, "Times New Roman", serif; text-wrap: balance; }
+  .button { @apply inline-flex items-center justify-center gap-3 rounded-sm px-5 py-3 text-sm font-medium transition-colors sm:px-6; }
+  .button-dark { @apply bg-[#302b25] text-white hover:bg-[#70553e]; }
+  .button-outline { @apply border border-[#b9aa96] hover:bg-[#eae3d8]; }
+  .nav-link { @apply text-stone-600 transition-colors hover:text-black; }
+  .skip-link { @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:p-4; }
+}
+
+/* Compact editorial hierarchy with warm, material-inspired surfaces. */
+.hero-title {
+  max-width: 10.5em;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.75rem, 4.6vw, 4.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+  font-weight: 400;
+  text-wrap: balance;
+}
+.hero-figure {
+  min-width: 0;
+  padding: 10px;
+  background: #e6ddcf;
+  border: 1px solid #d6cbb9;
+  box-shadow: 0 12px 30px #4939230a;
+}
+.hero-image { border-radius: 2px; }
+.hero-image .interior { aspect-ratio: 1.2; }
+.hero-caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 16px;
+  padding: 14px 4px 4px;
+  font-size: 11px;
+  color: #655342;
+}
+.service-card {
+  padding: 24px;
+  background: #f8f5ef;
+  border: 1px solid #d9d0c3;
+  border-top: 3px solid #967757;
+}
+.service-number {
+  width: fit-content;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+  line-height: 1;
+  color: #8a6c4f;
+}
+.project-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d9d0c3;
+  background: #fffcf7;
+}
+.project-number {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 7px 9px;
+  background: #f8f5efeb;
+  border: 1px solid #ffffff80;
+  color: #655342;
+  font-size: 11px;
+  line-height: 1;
+}
+.about-section {
+  background: linear-gradient(115deg, #302b25, #3b352d);
+  border-top: 4px solid #967757;
+}
+@media (max-width: 767px) {
+  .hero-title { max-width: 13em; font-size: clamp(2.6rem, 8.5vw, 3.6rem); }
+  .hero-image .interior { aspect-ratio: 1.4; }
+  .hero-caption { font-size: 10px; }
+  .service-card { padding: 20px; }
+}
+
+/* Self-contained concept illustrations, ready to be replaced by project photos. */
+.interior {
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 1 / 1.12;
+  overflow: hidden;
+  background: linear-gradient(110deg, #c2bdb2, #e8e4db 65%, #d7d1c5);
+}
+.interior-light {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(112deg, transparent 48%, #fff9e749 48%, #fff9e749 68%, transparent 68%);
+}
+.interior-floor {
+  position: absolute;
+  inset: 78% 0 0;
+  background: repeating-linear-gradient(98deg, transparent 0 18%, #a79c8c30 18.2% 18.5%), linear-gradient(#c4bbab, #ded6c9);
+  border-top: 1px solid #b0a795;
+}
+.interior-cabinet {
+  position: absolute;
+  inset: 17% 18% 18% 12%;
+  background: repeating-linear-gradient(90deg, #ffffff05 0 2px, #00000005 3px 4px), #99816a;
+  border: 8px solid #a58d74;
+  box-shadow: 12px 16px 25px #51433230, inset 6px 4px 15px #30261a25;
+}
+.interior-shelves {
+  position: absolute;
+  inset: 0 0 30%;
+  background: repeating-linear-gradient(0deg, transparent 0 31%, #b49a7d 31% 34%, #53433055 34% 35%), linear-gradient(90deg, transparent 48%, #b49a7d 48% 51%, transparent 51%);
+}
+.interior-doors {
+  position: absolute;
+  inset: 70% 0 0;
+  border-top: 6px solid #b39a7d;
+  background: repeating-linear-gradient(90deg, #aa9277 0 24%, #736049 24.3% 24.8%, #aa9277 25% 49%);
+}
+.interior-books {
+  position: absolute;
+  bottom: 34%; left: 10%; width: 24%; height: 22%;
+  background: repeating-linear-gradient(90deg, #e0d9c9 0 13%, #c0b7a6 14% 18%, #504c44 19% 24%);
+}
+.interior-vase {
+  position: absolute;
+  right: 17%; bottom: 1%; width: 15%; height: 22%;
+  border-radius: 30% 30% 42% 42%;
+  background: linear-gradient(90deg, #bfb7a7, #e5dfd0, #b5ad9b);
+}
+.interior-seat {
+  position: absolute;
+  right: 5%; bottom: 10%; width: 29%; height: 20%;
+  border-radius: 40% 40% 8% 8%;
+  background: linear-gradient(115deg, #e5e0d4, #bdb6a7);
+  border-bottom: 12px solid #685b4a;
+  box-shadow: 8px 12px 15px #433a2920;
+}
+.project-card .interior { aspect-ratio: 5 / 4; }
+.interior--wardrobe { background: linear-gradient(110deg, #cbc8c0, #eeece5); }
+.interior--wardrobe .interior-cabinet { inset: 9% 16% 15%; background: #c1b6a3; border-color: #b8ac97; }
+.interior--wardrobe .interior-shelves { inset: 0; background: repeating-linear-gradient(90deg, #c5baa6 0 32%, #908675 32.5% 33%, #c5baa6 33.5% 65%); }
+.interior--wardrobe .interior-doors { inset: 46% 31% 42% 66%; border: 0; background: #766b59; width: 2px; }
+.interior--wardrobe .interior-books, .interior--wardrobe .interior-vase { display: none; }
+.interior--wardrobe .interior-seat { width: 32%; height: 10%; right: 9%; border-radius: 3px; background: #8c7860; }
+.interior--kitchen { background: linear-gradient(110deg, #bcbdb5, #e3e2d9); }
+.interior--kitchen .interior-cabinet { inset: 46% 8% 17%; border: 0; border-top: 7px solid #ddd8cc; }
+.interior--kitchen .interior-shelves { inset: -60% 8% 125%; background: #95856f; box-shadow: 0 4px 8px #0002; }
+.interior--kitchen .interior-books { display: none; }
+.interior--kitchen .interior-vase { bottom: 100%; }
+.interior--kitchen .interior-doors { inset: 0; border: 0; background: repeating-linear-gradient(90deg, #8c8d7e 0 24%, #686c5e 24.5% 25%); }
+.interior--kitchen .interior-seat { right: 15%; bottom: 8%; width: 60%; height: 25%; border-radius: 0; border-top: 7px solid #e4ded2; border-bottom: 0; background: repeating-linear-gradient(90deg, #ab9477 0 3%, #b49e82 3% 4%); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .button, .nav-link { transition: none; }
 }
