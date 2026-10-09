@@ -4,7 +4,7 @@
 Build a reusable lead-generation system for visual home-improvement businesses, starting with custom carpentry/menuiserie.
 
 ## Current phase
-Day 1 setup / foundation.
+Day 1 setup complete. Beginning product development.
 
 ## Stack
 - Next.js 16
@@ -21,8 +21,9 @@ Day 1 setup / foundation.
 - ESLint
 - No React Compiler
 - No Cache Components
-- AI will be added later only where it provides business value
+- AI will be added later where it provides real business value
 - Build for both real sales potential and CV/AI experience
+- Initial reference vertical: custom carpentry/menuiserie
 
 ## Done
 - Ubuntu dev environment prepared
@@ -30,15 +31,19 @@ Day 1 setup / foundation.
 - pnpm installed
 - Next.js project created
 - App runs locally
-- Initial Git repository exists
-- Default homepage replaced with a simple test page
+- Git repository initialized
 - Node version pinned with .nvmrc
+- Private GitHub repository created
+- Local main connected to origin/main
+- Project pushed to GitHub
+- ChatGPT GitHub integration connected only to artisan-leads
 
 ## Not done yet
-- GitHub remote
-- ChatGPT GitHub integration
-- Public deployment
 - Real homepage design
+- Public deployment
+- Quote workflow/backend
+- Database
+- AI integration
 
 ## Next action
-Create first clean manual commit, then push to a private GitHub repository.
+Build the homepage navigation and hero section.
