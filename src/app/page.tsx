@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const services = [
@@ -7,26 +8,10 @@ const services = [
 ];
 
 const projects = [
-  { title: "Une bibliothèque habitée", category: "Bibliothèque & meuble bas", variant: "library" },
-  { title: "L’essentiel, bien rangé", category: "Dressing & rangements intégrés", variant: "wardrobe" },
-  { title: "Le cœur de la maison", category: "Cuisine & espace de vie", variant: "kitchen" },
+  { title: "Une bibliothèque habitée", category: "Bibliothèque & meuble bas", image: "/images/project-library.jpg", alt: "Bibliothèque blanche intégrée autour d’une fenêtre, avec étagères et livres près d’une cheminée" },
+  { title: "L’essentiel, bien rangé", category: "Dressing & rangements intégrés", image: "/images/project-wardrobe.jpg", alt: "Dressing en bois clair avec penderies ouvertes, tiroirs et éclairage intégré" },
+  { title: "Le cœur de la maison", category: "Cuisine & espace de vie", image: "/images/project-kitchen.jpg", alt: "Cuisine en bois clair avec rangements intégrés et îlot central au plan de travail sombre" },
 ];
-
-function InteriorVisual({ variant = "library" }: { variant?: string }) {
-  return (
-    <div className={`interior interior--${variant}`} aria-hidden="true">
-      <div className="interior-light" />
-      <div className="interior-floor" />
-      <div className="interior-cabinet">
-        <div className="interior-shelves">
-          <span className="interior-books" /><span className="interior-vase" />
-        </div>
-        <div className="interior-doors" />
-      </div>
-      <div className="interior-seat" />
-    </div>
-  );
-}
 
 export default function Home() {
   return (
@@ -57,7 +42,17 @@ export default function Home() {
             <p className="mt-6 flex items-center gap-3 border-t border-[#d9d0c3] pt-5 text-xs text-stone-600"><span className="h-px w-8 bg-stone-400" /> Du premier croquis aux dernières finitions.</p>
           </div>
           <figure className="hero-figure relative">
-            <div className="hero-image overflow-hidden"><InteriorVisual /></div>
+            <div className="hero-image overflow-hidden">
+              <Image
+                src="/images/hero.jpg"
+                alt="Salon avec agencement mural en bois, rangements intégrés et fauteuil en bois aux coussins beiges"
+                fill
+                sizes="(max-width: 767px) calc(100vw - 64px), (max-width: 1279px) 48vw, 560px"
+                className="object-cover"
+                loading="eager"
+                fetchPriority="high"
+              />
+            </div>
             <figcaption className="hero-caption"><span className="font-medium">Le bois. La lumière. Votre quotidien.</span><span className="text-[10px] uppercase tracking-wider">Visualisation d’intention</span></figcaption>
           </figure>
         </section>
@@ -90,7 +85,16 @@ export default function Home() {
           <div className="mt-7 grid gap-5 md:grid-cols-3 md:gap-5">
             {projects.map((project, index) => (
               <article key={project.title} className="project-card">
-                <div className="relative overflow-hidden"><InteriorVisual variant={project.variant} /><span className="project-number">0{index + 1}</span></div>
+                <div className="relative aspect-[5/4] overflow-hidden">
+                  <Image
+                    src={project.image}
+                    alt={project.alt}
+                    fill
+                    sizes="(max-width: 767px) calc(100vw - 40px), (max-width: 1279px) 30vw, 380px"
+                    className="object-cover"
+                  />
+                  <span className="project-number">0{index + 1}</span>
+                </div>
                 <div className="px-5 py-5"><p className="text-[10px] font-medium uppercase tracking-[0.12em] text-[#7a624c]">{project.category}</p><h3 className="mt-2 text-xl font-semibold tracking-tight">{project.title}</h3></div>
               </article>
             ))}
