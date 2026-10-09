@@ -115,10 +115,133 @@ export default function Home() {
           <a href="#quote" className="button button-dark">Parlons de votre projet <span aria-hidden="true">↗</span></a>
         </section>
 
-        <section id="quote" className="border-y border-[#d9d0c3] bg-[#eae3d8] py-10 md:py-12">
-          <div className="page-width grid gap-6 md:grid-cols-[1.1fr_1fr] md:gap-14">
-            <div><p className="eyebrow">04 — Votre projet commence ici</p><h2 className="section-title mt-4">Préparons votre demande de devis.</h2><p className="mt-5 max-w-lg leading-7 text-stone-600">Pour un premier échange utile, rassemblez quelques éléments : la pièce à aménager, ses dimensions approximatives, vos inspirations et le calendrier souhaité.</p></div>
-            <div className="self-center border border-[#d9d0c3] bg-[#f8f5ef] p-6 sm:p-7"><h3 className="text-lg font-medium">Un intérieur à votre mesure.</h3><p className="mt-3 text-sm leading-7 text-stone-600">Agencement, rangements ou cuisine : décrivez votre envie, même si elle n’en est qu’à ses débuts.</p><p className="mt-5 text-sm text-stone-500">Les coordonnées de contact seront disponibles prochainement.</p></div>
+        <section
+          id="quote"
+          className="border-y border-[#d9d0c3] bg-[#eae3d8] py-10 md:py-14"
+        >
+          <div className="page-width grid gap-10 md:grid-cols-[0.85fr_1.15fr] md:gap-16">
+            <div>
+              <p className="eyebrow">04 — Votre projet commence ici</p>
+
+              <h2 className="section-title mt-4">
+                Parlez-nous de votre projet.
+              </h2>
+
+              <p className="mt-5 max-w-md leading-7 text-stone-600">
+                Quelques informations suffisent pour préparer un premier échange
+                utile. Nous reviendrons vers vous pour préciser ensemble votre besoin.
+              </p>
+
+              <p className="mt-8 text-sm text-stone-500">
+                Île-de-France · Réponse sous 1 à 2 jours ouvrés
+              </p>
+            </div>
+
+            <form className="grid gap-5 rounded-sm border border-[#d9d0c3] bg-[#f8f5ef] p-6 sm:p-8">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="grid gap-2 text-sm">
+                  Nom
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Jean Dupont"
+                    className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
+                  />
+                </label>
+
+                <label className="grid gap-2 text-sm">
+                  Email
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="jean@email.fr"
+                    className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="grid gap-2 text-sm">
+                  Téléphone
+                  <input
+                    type="tel"
+                    name="phone"
+                    placeholder="06 12 34 56 78"
+                    className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
+                  />
+                </label>
+
+                <label className="grid gap-2 text-sm">
+                  Localisation
+                  <input
+                    type="text"
+                    name="location"
+                    placeholder="Paris 15e"
+                    className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
+                  />
+                </label>
+              </div>
+
+              <label className="grid gap-2 text-sm">
+                Type de projet
+                <select
+                  name="projectType"
+                  className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
+                >
+                  <option>Agencement sur mesure</option>
+                  <option>Meuble / rangement</option>
+                  <option>Cuisine</option>
+                  <option>Autre</option>
+                </select>
+              </label>
+
+              <label className="grid gap-2 text-sm">
+                Budget approximatif
+                <select
+                  name="budget"
+                  className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
+                >
+                  <option>Moins de 2 000 €</option>
+                  <option>2 000 € – 5 000 €</option>
+                  <option>5 000 € – 10 000 €</option>
+                  <option>Plus de 10 000 €</option>
+                  <option>Je ne sais pas encore</option>
+                </select>
+              </label>
+
+              <label className="grid gap-2 text-sm">
+                Décrivez votre projet
+                <textarea
+                  name="description"
+                  rows={5}
+                  placeholder="Pièce concernée, dimensions approximatives, style recherché, contraintes particulières..."
+                  className="resize-y border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm">
+                Photos ou inspirations
+                <input
+                  type="file"
+                  name="images"
+                  multiple
+                  accept="image/*"
+                  className="border border-dashed border-[#b9aa96] bg-white px-4 py-5 text-sm"
+                />
+              </label>
+
+              <button
+                type="button"
+                className="button button-dark mt-2 w-full sm:w-fit"
+              >
+                Envoyer ma demande
+              </button>
+
+              <p className="text-xs leading-5 text-stone-500">
+                Version de démonstration : l’envoi sera activé lors de la connexion au
+                serveur.
+              </p>
+            </form>
           </div>
         </section>
       </main>
