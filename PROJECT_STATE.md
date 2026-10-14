@@ -1,10 +1,18 @@
 # Project State
 
 ## Goal
-Build a reusable lead-generation system for visual home-improvement businesses, starting with custom carpentry/menuiserie.
+Build a reusable lead-generation and lead-management system for home-improvement businesses, starting with custom carpentry/menuiserie.
+
+The project should:
+- have real sales potential,
+- strengthen full-stack engineering skills,
+- include a meaningful AI workflow,
+- provide a strong CV/interview project.
 
 ## Current phase
-Day 1 setup complete. Beginning product development.
+Frontend V1 complete.
+Validated lead-submission flow complete.
+Next milestone: persistent PostgreSQL storage.
 
 ## Stack
 - Next.js 16
@@ -13,37 +21,46 @@ Day 1 setup complete. Beginning product development.
 - Tailwind CSS
 - pnpm
 - Node 24
-- Git
-
-## Decisions
-- App Router
-- src/ directory
-- ESLint
-- No React Compiler
-- No Cache Components
-- AI will be added later where it provides real business value
-- Build for both real sales potential and CV/AI experience
-- Initial reference vertical: custom carpentry/menuiserie
+- Zod
+- Git / GitHub
+- PostgreSQL via Supabase planned
 
 ## Done
-- Ubuntu dev environment prepared
-- Node installed with nvm
-- pnpm installed
-- Next.js project created
-- App runs locally
-- Git repository initialized
-- Node version pinned with .nvmrc
-- Private GitHub repository created
-- Local main connected to origin/main
-- Project pushed to GitHub
-- ChatGPT GitHub integration connected only to artisan-leads
+- Ubuntu development environment
+- Git/GitHub repository
+- Responsive homepage V1
+- Real project imagery
+- Quote-request form UI
+- Client-side form submission with fetch()
+- Next.js API route: POST /api/leads
+- Success/error UX without page navigation
+- Zod LeadSchema
+- Frontend validation
+- Server-side validation
+- Valid request -> HTTP 201
+- Invalid request -> HTTP 400
+- feature/lead-submission pushed to GitHub
+
+## Current architecture
+
+Browser
+→ QuoteForm.tsx
+→ POST /api/leads
+→ Next.js server route
+→ Zod validation
+→ database next
 
 ## Not done yet
-- Real homepage design
-- Public deployment
-- Quote workflow/backend
-- Database
-- AI integration
+- PostgreSQL persistence
+- Lead dashboard
+- Deployment
+- Photo storage
+- Email notifications
+- Lead workflow/statuses
+- AI lead processing
+- Authentication
+- Reusable business configuration layer
+- CI/CD
 
 ## Next action
-Build the homepage navigation and hero section.
+Create the PostgreSQL database and leads table using Supabase, then persist validated leads from POST /api/leads.
