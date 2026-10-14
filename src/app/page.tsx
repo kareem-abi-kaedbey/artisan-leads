@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import QuoteForm from "@/components/QuoteForm";
 
 const services = [
   { title: "Agencement sur mesure", description: "Bibliothèques, espaces de travail et séparations : un intérieur structuré autour de vos usages.", detail: "Donner du sens à chaque mètre carré" },
@@ -42,7 +43,7 @@ export default function Home() {
             <p className="mt-6 flex items-center gap-3 border-t border-[#d9d0c3] pt-5 text-xs text-stone-600"><span className="h-px w-8 bg-stone-400" /> Du premier croquis aux dernières finitions.</p>
           </div>
           <figure className="hero-figure relative">
-            <div className="hero-image overflow-hidden">
+            <div className="hero-image relative overflow-hidden">
               <Image
                 src="/images/hero.jpg"
                 alt="Salon avec agencement mural en bois, rangements intégrés et fauteuil en bois aux coussins beiges"
@@ -140,112 +141,7 @@ export default function Home() {
                 Île-de-France · Réponse sous 1 à 2 jours ouvrés
               </p>
             </div>
-
-            <form className="grid gap-5 rounded-sm border border-[#d9d0c3] bg-[#f8f5ef] p-6 sm:p-8">
-              <div className="grid gap-5 sm:grid-cols-2">
-                <label className="grid gap-2 text-sm">
-                  Nom
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Jean Dupont"
-                    className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
-                  />
-                </label>
-
-                <label className="grid gap-2 text-sm">
-                  Email
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="jean@email.fr"
-                    className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
-                  />
-                </label>
-              </div>
-
-              <div className="grid gap-5 sm:grid-cols-2">
-                <label className="grid gap-2 text-sm">
-                  Téléphone
-                  <input
-                    type="tel"
-                    name="phone"
-                    placeholder="06 12 34 56 78"
-                    className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
-                  />
-                </label>
-
-                <label className="grid gap-2 text-sm">
-                  Localisation
-                  <input
-                    type="text"
-                    name="location"
-                    placeholder="Paris 15e"
-                    className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
-                  />
-                </label>
-              </div>
-
-              <label className="grid gap-2 text-sm">
-                Type de projet
-                <select
-                  name="projectType"
-                  className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
-                >
-                  <option>Agencement sur mesure</option>
-                  <option>Meuble / rangement</option>
-                  <option>Cuisine</option>
-                  <option>Autre</option>
-                </select>
-              </label>
-
-              <label className="grid gap-2 text-sm">
-                Budget approximatif
-                <select
-                  name="budget"
-                  className="border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
-                >
-                  <option>Moins de 2 000 €</option>
-                  <option>2 000 € – 5 000 €</option>
-                  <option>5 000 € – 10 000 €</option>
-                  <option>Plus de 10 000 €</option>
-                  <option>Je ne sais pas encore</option>
-                </select>
-              </label>
-
-              <label className="grid gap-2 text-sm">
-                Décrivez votre projet
-                <textarea
-                  name="description"
-                  rows={5}
-                  placeholder="Pièce concernée, dimensions approximatives, style recherché, contraintes particulières..."
-                  className="resize-y border border-[#cfc4b5] bg-white px-4 py-3 outline-none focus:border-[#70553e]"
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm">
-                Photos ou inspirations
-                <input
-                  type="file"
-                  name="images"
-                  multiple
-                  accept="image/*"
-                  className="border border-dashed border-[#b9aa96] bg-white px-4 py-5 text-sm"
-                />
-              </label>
-
-              <button
-                type="button"
-                className="button button-dark mt-2 w-full sm:w-fit"
-              >
-                Envoyer ma demande
-              </button>
-
-              <p className="text-xs leading-5 text-stone-500">
-                Version de démonstration : l’envoi sera activé lors de la connexion au
-                serveur.
-              </p>
-            </form>
+            <QuoteForm />
           </div>
         </section>
       </main>
