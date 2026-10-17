@@ -112,6 +112,21 @@ export default async function LeadDetailPage({
               <div><dt className="text-xs text-stone-600">Email</dt><dd className="mt-1.5 break-words">{lead.email ? <a href={`mailto:${lead.email}`} className="underline decoration-[#b9aa96] underline-offset-4">{lead.email}</a> : "Non renseigné"}</dd></div>
               <div><dt className="text-xs text-stone-600">Téléphone</dt><dd className="mt-1.5 break-words">{lead.phone ? <a href={`tel:${lead.phone}`} className="underline decoration-[#b9aa96] underline-offset-4">{lead.phone}</a> : "Non renseigné"}</dd></div>
             </dl>
+            <div className="mt-6 flex flex-col gap-3 border-t border-[#cfc4b5] pt-5">
+              {lead.email && (
+                <a
+                  href={`mailto:${lead.email}?subject=${encodeURIComponent(lead.project_type ? `Votre demande de devis — ${lead.project_type}` : "Votre demande de devis — Atelier Noyer")}`}
+                  className="button button-dark w-full"
+                >
+                  Répondre par email <span aria-hidden="true">↗</span>
+                </a>
+              )}
+              {lead.phone && (
+                <a href={`tel:${lead.phone}`} className="button button-outline w-full">
+                  Appeler <span aria-hidden="true">↗</span>
+                </a>
+              )}
+            </div>
           </section>
         </aside>
 
