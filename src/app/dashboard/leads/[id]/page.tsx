@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/supabase-auth/admin";
 import Image from "next/image";
 import LeadStatusControl from "@/components/LeadStatusControl";
 import { LeadDate, StatusBadge } from "@/components/LeadDisplay";
@@ -17,6 +18,8 @@ export default async function LeadDetailPage({
   params,
 }: LeadDetailPageProps) {
   const { id } = await params;
+
+  await requireAdmin();
 
   const supabase = getSupabaseServer();
 

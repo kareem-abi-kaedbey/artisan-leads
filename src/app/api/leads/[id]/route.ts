@@ -1,3 +1,4 @@
+import { getAdminAccess } from "@/lib/supabase-auth/admin";
 import { getSupabaseServer } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +9,14 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const access = await getAdminAccess();
+  if (access !== "admin") {
+    return Response.json(
+      { success: false, message: access === "unauthenticated" ? "Authentification requise." : "Accès refusé." },
+      { status: access === "unauthenticated" ? 401 : 403 }
+    );
+  }
+
   const body: unknown = await request.json().catch(() => null);
   const status = body && typeof body === "object" && "status" in body ? body.status : null;
 

@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/supabase-auth/admin";
 import Link from "next/link";
 import { LeadDate, StatusBadge } from "@/components/LeadDisplay";
 import { getSupabaseServer } from "@/lib/supabase-server";
@@ -5,6 +6,8 @@ import { getSupabaseServer } from "@/lib/supabase-server";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  await requireAdmin();
+
   const supabase = getSupabaseServer();
 
   const { data: leads, error } = await supabase
