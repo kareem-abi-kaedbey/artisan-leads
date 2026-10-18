@@ -66,3 +66,39 @@ Run the isolated authorization checks with:
 ```bash
 node --test tests/admin-auth.test.mjs
 ```
+
+## Explicit AI lead analysis
+
+Set `GEMINI_API_KEY` on the server. The Gemini client is created only inside an
+explicit analysis request, so builds and page reads do not require this key.
+The configured model is `gemini-3.8-flash`.
+
+On a lead detail page, **Analyser avec l’IA** calls the admin-protected
+`POST /api/leads/[id]/analyze` endpoint. The endpoint loads only `project_type`,
+`location`, `budget`, and `description` from PostgreSQL. It does not read lead text
+from the request body or send name, email, phone, images, IDs, or session data to
+Gemini. Contact information embedded by a prospect in the free-text description
+is part of that description; field minimization is not free-text redaction.
+
+One generation request is made with a 1,200-token output ceiling, a 60-second
+HTTP timeout, structured JSON, and SDK retries disabled. The JSON schema is derived
+from Zod and the response is parsed and validated again before persistence.
+Invalid or failed outputs are never saved. No tools or automatic follow-up calls
+are enabled.
+
+The existing `lead_ai_analysis` table stores one current result per lead via
+`upsert(..., { onConflict: "lead_id" })`, including the model and updated timestamp.
+Detail-page reads use the stored result and never call Gemini. Only clicking
+**Régénérer l’analyse** replaces it. Buttons are disabled while saving/refreshing;
+there is no cross-tab request deduplication or usage quota in this V1. If saving
+fails after generation, the model request has already occurred; retrying manually
+will make another request.
+
+SDK dependency lifecycle scripts are explicitly disabled in `pnpm-workspace.yaml`;
+the published SDK distribution is used directly.
+
+Run isolated auth and AI checks (no live provider or database calls):
+
+```bash
+node --test tests/admin-auth.test.mjs tests/lead-analysis.test.mjs
+```

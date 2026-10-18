@@ -1,3 +1,5 @@
+import LeadAnalysisPanel from "@/components/LeadAnalysisPanel";
+import { LeadAnalysisSchema } from "@/lib/ai/lead-analysis-schema";
 import { requireAdmin } from "@/lib/supabase-auth/admin";
 import Image from "next/image";
 import LeadStatusControl from "@/components/LeadStatusControl";
@@ -39,6 +41,24 @@ export default async function LeadDetailPage({
 
   if (!lead) {
     notFound();
+  }
+
+  // Read persisted analysis only. Viewing or refreshing never invokes Gemini.
+  const { data: analysisRow, error: analysisError } = await supabase
+    .from("lead_ai_analysis")
+    .select("summary, priority, priority_reason, missing_information, recommended_next_action, suggested_reply")
+    .eq("lead_id", id)
+    .maybeSingle();
+  const parsedAnalysis = analysisRow ? LeadAnalysisSchema.safeParse({
+    summary: analysisRow.summary,
+    priority: analysisRow.priority,
+    priorityReason: analysisRow.priority_reason,
+    missingInformation: analysisRow.missing_information,
+    recommendedNextAction: analysisRow.recommended_next_action,
+    suggestedReply: analysisRow.suggested_reply,
+  }) : null;
+  if (analysisError || (parsedAnalysis && !parsedAnalysis.success)) {
+    console.error("Failed to load saved lead analysis:", { code: analysisError?.code, invalidData: parsedAnalysis?.success === false });
   }
 
   // 2. Get all images linked to this lead.
@@ -139,6 +159,12 @@ export default async function LeadDetailPage({
             <h2 id="description-title" className="mt-2 text-lg font-semibold tracking-tight">Description du projet</h2>
             <p className="mt-5 text-sm leading-7 whitespace-pre-wrap break-words text-stone-600">{lead.description || "Aucune description renseignée."}</p>
           </section>
+
+          <LeadAnalysisPanel
+            leadId={lead.id}
+            analysis={parsedAnalysis?.success ? parsedAnalysis.data : null}
+            loadError={Boolean(analysisError) || parsedAnalysis?.success === false}
+          />
 
           <section aria-labelledby="images-title" className="rounded-sm border border-[#d9d0c3] bg-[#fffcf7] p-5 sm:p-7">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
