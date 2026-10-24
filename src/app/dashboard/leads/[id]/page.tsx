@@ -1,3 +1,4 @@
+import LeadFollowUpPanel from "@/components/LeadFollowUpPanel";
 import LeadAnalysisPanel from "@/components/LeadAnalysisPanel";
 import { LeadAnalysisSchema } from "@/lib/ai/lead-analysis-schema";
 import { requireAdmin } from "@/lib/supabase-auth/admin";
@@ -165,6 +166,8 @@ export default async function LeadDetailPage({
             analysis={parsedAnalysis?.success ? parsedAnalysis.data : null}
             loadError={Boolean(analysisError) || parsedAnalysis?.success === false}
           />
+
+          <LeadFollowUpPanel key={lead.id} leadId={lead.id} status={lead.status} />
 
           <section aria-labelledby="images-title" className="rounded-sm border border-[#d9d0c3] bg-[#fffcf7] p-5 sm:p-7">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
