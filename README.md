@@ -102,3 +102,54 @@ Run isolated auth and AI checks (no live provider or database calls):
 ```bash
 node --test tests/admin-auth.test.mjs tests/lead-analysis.test.mjs
 ```
+
+## V2: read-only follow-up endpoint
+
+`POST /api/leads/[id]/follow-up` is admin-only and currently has no UI. It returns
+`{ success: true, followUp: { summary, reasoning, recommendedAction, suggestedReply,
+proposedStatus } }`. It neither persists this result nor changes a lead/status or
+sends a message. V1 `/analyze` is unchanged.
+
+The server uses the installed `@google/genai` Interactions API with model
+`gemini-3.8-flash`, not a managed agent. Conversation history is request-local:
+`store: false`, no previous interaction ID, no background tasks or retries.
+
+The explicit loop is:
+
+1. Send a generic request plus exactly three custom function declarations.
+2. Validate returned function names, unique call IDs and strictly empty arguments.
+3. Execute approved read-only tools on the route's lead and append matching
+   `function_result` steps. Preserve returned thought signatures/call steps when
+   continuing the stateless conversation; do not log or return them to the browser.
+4. Continue until one final JSON response is returned and validate it with Zod.
+
+Tool selection is model-driven: sufficient context gathering is strongly encouraged,
+but a valid final response is accepted after zero, some, or all tools. Each tool
+may run at most once, together with other tools or sequentially. Limits: four model requests, three tool
+executions total, 1,200 output tokens per model request, 30-second request timeout
+and a 90-second overall model-loop deadline. Repeated calls, unexpected/managed
+tools, supplied arguments, incomplete replies and invalid output fail safely.
+
+Tool scope:
+
+- `get_lead_context()` exposes only project type, location, budget, description,
+  status and received date. A minimized snapshot is loaded before any paid call.
+- `get_existing_analysis()` reads only the same lead's six V1 analysis fields,
+  returning `{ found: false, analysis: null }` if absent. No IDs or model metadata.
+- `get_business_rules()` returns five deterministic demo rules from server code.
+
+The model cannot choose a lead ID, filter a query, fetch a URL or invoke mutation
+methods. Customer names/contact fields/images/credentials are not selected or
+sent. As with V1, existing free text can contain personal information; this is
+field minimization, not automatic redaction. `proposedStatus` is a recommendation
+only. No approval or status-mutation flow is added in this iteration.
+
+The Interactions API protocol (`steps`, function steps, structured response format)
+is checked against SDK 2.30.0 with mocked HTTP transport. Verify actual model access
+and provider-side tool/structured-output support manually in the target project;
+tests do not call Gemini or Supabase. Strict protocol checks intentionally fail
+closed if the provider changes its response shape.
+
+```bash
+node --test tests/admin-auth.test.mjs tests/lead-analysis.test.mjs tests/lead-follow-up.test.mjs
+```
