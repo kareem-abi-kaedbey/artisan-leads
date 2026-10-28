@@ -2,9 +2,11 @@ import "server-only";
 
 import { GoogleGenAI, type Interactions } from "@google/genai";
 import { z } from "zod";
+import { createFollowUpTrace, type FollowUpTrace } from "./follow-up-trace";
+export { FOLLOW_UP_AGENT_VERSION } from "./follow-up-trace";
 import { FollowUpSchema, ToolCallSchema, followUpJsonSchema, type FollowUpToolName } from "./follow-up-schema";
 
-export const FOLLOW_UP_MODEL = "gemini-3.8-flash";
+export const FOLLOW_UP_MODEL = "gemini-3.5-flash-lite";
 export const MAX_FOLLOW_UP_STEPS = 4;
 const toolNames: FollowUpToolName[] = ["get_lead_context", "get_existing_analysis", "get_business_rules"];
 const tools: Interactions.Function[] = toolNames.map((name) => ({
@@ -48,27 +50,47 @@ export class FollowUpProtocolError extends Error {
   constructor(message: string) { super(message); this.name = "FollowUpProtocolError"; }
 }
 
-export async function runFollowUpAgent(executeTool: (name: unknown, args: unknown) => Promise<unknown>) {
+export async function runFollowUpAgent(executeTool: (name: unknown, args: unknown) => Promise<unknown>, existingTrace?: FollowUpTrace) {
+  const trace = existingTrace ?? createFollowUpTrace(FOLLOW_UP_MODEL);
+  try {
+    const result = await runAgent(executeTool, trace);
+    if (!existingTrace) trace.finish("completed");
+    return result;
+  } catch (error) {
+    if (!existingTrace) trace.finish("failed", error);
+    throw error;
+  }
+}
+
+async function runAgent(executeTool: (name: unknown, args: unknown) => Promise<unknown>, trace: FollowUpTrace) {
+  trace.phase("configuration");
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Missing Gemini configuration");
   const ai = new GoogleGenAI({ apiKey, httpOptions: { retryOptions: { attempts: 1 } } });
   const history: Interactions.Step[] = [{ type: "user_input", content: [{ type: "text", text: "Prépare une recommandation de suivi de la demande courante en consultant les outils utiles pour obtenir un contexte suffisant." }] }];
   const usedTools = new Set<FollowUpToolName>();
   const usedCallIds = new Set<string>();
-  // One deadline for the entire workflow, plus a hard limit on model/tool steps.
-  const signal = AbortSignal.timeout(90_000);
-
   for (let step = 0; step < MAX_FOLLOW_UP_STEPS; step++) {
-    const response = await ai.interactions.create({
+    // Each model request gets its own deadline; never reuse an expired signal.
+    const signal = AbortSignal.timeout(90_000);
+    const response = await trace.modelRequest(step + 1, () => ai.interactions.create({
       model: FOLLOW_UP_MODEL, store: false, stream: false,
       input: history, system_instruction: instruction, tools,
       generation_config: { max_output_tokens: 1200, thinking_level: "low" },
       response_format: { type: "text", mime_type: "application/json", schema: followUpJsonSchema },
-    }, { retries: { strategy: "none" }, timeout: 90_000, signal });
+    }, { retries: { strategy: "none" }, timeout: 90_000, signal }));
+    trace.phase("model_validation");
+    // Record requested tools before strict validation, without argument values or untrusted names.
+    if (Array.isArray(response.steps)) {
+      for (const item of response.steps) {
+        if (item.type === "function_call") trace.toolRequested(step + 1, item.name, item.arguments);
+      }
+    }
 
     // Reject managed tool steps, partial/failed replies, excessive payloads and malformed calls.
     if (JSON.stringify(response.steps).length > 60000) throw new FollowUpProtocolError("Oversized interaction");
     const envelope = EnvelopeSchema.parse(response);
+    trace.phase("tool_validation");
     const calls = envelope.steps.filter((item) => item.type === "function_call").map((item) => ToolCallSchema.parse(item));
     if (calls.length) {
       if (envelope.status !== "requires_action" || step === MAX_FOLLOW_UP_STEPS - 1 || calls.length > 3) {
@@ -83,12 +105,13 @@ export async function runFollowUpAgent(executeTool: (name: unknown, args: unknow
       // Preserve provider thought/signature and function-call steps exactly for stateless continuation.
       history.push(...response.steps);
       for (const call of calls) {
-        const result = await executeTool(call.name, call.arguments);
+        const result = await trace.toolExecution(step + 1, call.name, () => executeTool(call.name, call.arguments));
         history.push({ type: "function_result", name: call.name, call_id: call.id, result: JSON.stringify(result) });
       }
       continue;
     }
 
+    trace.phase("final_validation");
     if (envelope.status !== "completed") throw new FollowUpProtocolError("Incomplete tool workflow");
     const outputs = envelope.steps.filter((item) => item.type === "model_output").map((item) => OutputSchema.parse(item));
     if (outputs.length !== 1) throw new FollowUpProtocolError("Expected one final output");

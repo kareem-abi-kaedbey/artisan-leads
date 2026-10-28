@@ -14,6 +14,7 @@ function load(file, dependencies) {
   }, exports, { error() {} });
   return exports;
 }
+const tracing = load("src/lib/ai/follow-up-trace.ts", { "server-only": {} });
 const schema = load("src/lib/ai/follow-up-schema.ts", { zod: require("zod") });
 const v1Schema = load("src/lib/ai/lead-analysis-schema.ts", { zod: require("zod") });
 const id = "12345678-1234-1234-1234-123456789abc";
@@ -38,7 +39,7 @@ function toolFixture({ missing = false, noAnalysis = false, dbError = false } = 
   } }; } };
   const loaded = load("src/lib/ai/follow-up-tools.ts", {
     "server-only": {}, zod: require("zod"), "@/lib/supabase-server": { getSupabaseServer: () => client },
-    "./lead-analysis-schema": v1Schema, "./follow-up-schema": schema,
+    "./lead-analysis-schema": v1Schema, "./follow-up-schema": schema, "./follow-up-trace": tracing,
   });
   return { ...loaded, queries };
 }
@@ -77,7 +78,7 @@ test("missing analysis is explicit; missing or invalid context fails closed", as
   await assert.rejects(() => toolFixture({ dbError: true }).createFollowUpTools(id));
 });
 
-async function runScript(script, execute = async (name) => ({ tool: name })) {
+async function runScript(script, execute = async (name) => ({ tool: name }), inspectRequest = () => {}) {
   const previous = process.env.GEMINI_API_KEY;
   process.env.GEMINI_API_KEY = "test-key";
   const requests = [];
@@ -85,12 +86,13 @@ async function runScript(script, execute = async (name) => ({ tool: name })) {
     constructor() { this.interactions = { create: async (params, options) => {
       assert.equal(params.store, false);
       assert.equal(params.stream, false);
-      assert.equal(params.model, "gemini-3.8-flash");
+      assert.equal(params.model, "gemini-3.5-flash-lite");
       assert.equal(params.generation_config.max_output_tokens, 1200);
       assert.deepEqual(params.tools.map((tool) => tool.name), names);
       assert.deepEqual(options.retries, { strategy: "none" });
       assert.ok(!params.agent && !params.previous_interaction_id);
       requests.push(structuredClone(params));
+      inspectRequest(options, requests.length);
       assert.ok(script.length, "Unbounded/extra model request");
       const next = script.shift();
       if (next instanceof Error) throw next;
@@ -98,7 +100,7 @@ async function runScript(script, execute = async (name) => ({ tool: name })) {
     } }; }
   }
   const loaded = load("src/lib/ai/follow-up-agent.ts", {
-    "server-only": {}, zod: require("zod"), "@google/genai": { GoogleGenAI }, "./follow-up-schema": schema,
+    "server-only": {}, zod: require("zod"), "@google/genai": { GoogleGenAI }, "./follow-up-schema": schema, "./follow-up-trace": tracing,
   });
   try {
     return { result: await loaded.runFollowUpAgent(execute), requests };
@@ -177,7 +179,7 @@ for (const [access, expected] of [["unauthenticated", 401], ["forbidden", 403], 
         assert.equal(routeId, id); toolLoads++; return async () => ({});
       } },
       "@/lib/ai/follow-up-agent": { runFollowUpAgent: async () => { runs++; return final; } },
-      "@/lib/ai/follow-up-schema": schema,
+      "@/lib/ai/follow-up-schema": schema, "@/lib/ai/follow-up-trace": tracing,
     });
     const result = await POST({ json: () => assert.fail("Browser text read") }, { params: Promise.resolve({ id }) });
     assert.equal(result.status, expected);
@@ -203,7 +205,7 @@ test("installed SDK serializes the current Interactions protocol and does not re
   };
   try {
     const ai = new GoogleGenAI({ apiKey: "fake-key" });
-    await assert.rejects(() => ai.interactions.create({ model: "gemini-3.8-flash", store: false, input: "Test" }, { retries: { strategy: "none" }, timeout: 1000 }), (error) => error.status === 500);
+    await assert.rejects(() => ai.interactions.create({ model: "gemini-3.5-flash-lite", store: false, input: "Test" }, { retries: { strategy: "none" }, timeout: 1000 }), (error) => error.status === 500);
     assert.equal(requests, 1);
   } finally { globalThis.fetch = previousFetch; }
 });
@@ -224,7 +226,7 @@ for (const [label, failure, status] of [["missing lead", "missing", 404], ["data
         if (failure === "model") throw Error("private provider detail");
         return { ...final, proposedStatus: "invalid" };
       } },
-      "@/lib/ai/follow-up-schema": schema,
+      "@/lib/ai/follow-up-schema": schema, "@/lib/ai/follow-up-trace": tracing,
     });
     const result = await POST({}, { params: Promise.resolve({ id }) });
     assert.equal(result.status, status);
@@ -254,12 +256,43 @@ test("installed SDK preserves stateless steps and function results in a complete
   };
   try {
     const { runFollowUpAgent } = load("src/lib/ai/follow-up-agent.ts", {
-      "server-only": {}, zod: require("zod"), "@google/genai": { GoogleGenAI }, "./follow-up-schema": schema,
+      "server-only": {}, zod: require("zod"), "@google/genai": { GoogleGenAI }, "./follow-up-schema": schema, "./follow-up-trace": tracing,
     });
     assert.deepEqual(await runFollowUpAgent(async () => ({ found: false, analysis: null })), final);
     assert.equal(requests, 2);
   } finally {
     globalThis.fetch = previousFetch;
     if (previousKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = previousKey;
+  }
+});
+
+
+test("each model turn gets a fresh signal even when the preceding signal has expired", async () => {
+  const controllers = [];
+  const timeoutMock = test.mock.method(AbortSignal, "timeout", (milliseconds) => {
+    assert.equal(milliseconds, 90_000);
+    const controller = new AbortController();
+    controllers.push(controller);
+    return controller.signal;
+  });
+  try {
+    const { result, requests } = await runScript(
+      [response([call(names[0])]), done()],
+      async () => ({ found: false, analysis: null }),
+      (options, turn) => {
+        assert.equal(options.timeout, 90_000);
+        assert.deepEqual(options.retries, { strategy: "none" });
+        assert.equal(options.signal.aborted, false);
+        if (turn === 1) controllers[0].abort(new DOMException("Simulated expired deadline", "TimeoutError"));
+        else assert.notEqual(options.signal, controllers[0].signal);
+      },
+    );
+    assert.deepEqual(result, final);
+    assert.equal(requests.length, 2);
+    assert.equal(controllers.length, 2);
+    assert.equal(controllers[0].signal.aborted, true);
+    assert.equal(controllers[1].signal.aborted, false);
+  } finally {
+    timeoutMock.mock.restore();
   }
 });
