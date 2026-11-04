@@ -15,6 +15,7 @@ function load(file, dependencies) {
   return exports;
 }
 const tracing = load("src/lib/ai/follow-up-trace.ts", { "server-only": {} });
+const retry = load("src/lib/ai/follow-up-retry.ts", { "server-only": {}, "node:timers/promises": { setTimeout: async () => {} } });
 const schema = load("src/lib/ai/follow-up-schema.ts", { zod: require("zod") });
 const final = { summary: "PRIVATE_DESCRIPTION", reasoning: "PRIVATE_REASON", recommendedAction: "Contacter", suggestedReply: "PRIVATE_REPLY", proposedStatus: null };
 const model = "gemini-3.5-flash-lite";
@@ -118,7 +119,7 @@ for (const scenario of ["success", "timeout", "validation", "tool_failure"]) {
       } }; }
     }
     const { runFollowUpAgent } = load("src/lib/ai/follow-up-agent.ts", {
-      "server-only": {}, "@google/genai": { GoogleGenAI }, zod: require("zod"), "./follow-up-schema": schema, "./follow-up-trace": tracing,
+      "server-only": {}, "@google/genai": { GoogleGenAI }, zod: require("zod"), "./follow-up-schema": schema, "./follow-up-trace": tracing, "./follow-up-retry": retry,
     });
     try {
       const operation = () => runFollowUpAgent(async () => { if (scenario === "tool_failure") throw Error("PRIVATE_EMAIL"); return { description: "PRIVATE_DESCRIPTION" }; }, trace);
@@ -127,7 +128,7 @@ for (const scenario of ["success", "timeout", "validation", "tool_failure"]) {
       const finish = events.at(-1);
       assert.equal(finish.outcome, scenario === "success" ? "completed" : "failed");
       assert.equal(finish.phase, scenario === "timeout" ? "model_request" : scenario === "tool_failure" ? "tool_execution" : "final_validation");
-      assert.equal(finish.modelRequests, ["timeout", "tool_failure"].includes(scenario) ? 1 : 2);
+      assert.equal(finish.modelRequests, scenario === "tool_failure" ? 1 : 2);
       assert.equal(finish.toolExecutions, scenario === "timeout" ? 0 : 1);
       for (const secret of ["SECRET_KEY", "PRIVATE_EMAIL", "PRIVATE_DESCRIPTION", "PRIVATE_REPLY", "PRIVATE_REASON"]) assert.ok(!JSON.stringify(events).includes(secret));
     } finally { if (previous === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = previous; }

@@ -40,7 +40,7 @@ export function createFollowUpTrace(model: string, sink: (event: RecordData) => 
   const runId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
   const started = performance.now();
-  let phase: Phase = "authorization", modelRequests = 0, toolExecutions = 0, finished = false;
+  let phase: Phase = "authorization", modelRequests = 0, modelTurns = 0, toolExecutions = 0, finished = false;
   function emit(event: string, data: RecordData = {}) {
     // Logging must never change success/failure behavior of the workflow.
     try { sink({ event, runId, model, version: FOLLOW_UP_AGENT_VERSION, startedAt, timestamp: new Date().toISOString(), ...data }); } catch { /* best effort */ }
@@ -51,20 +51,24 @@ export function createFollowUpTrace(model: string, sink: (event: RecordData) => 
     toolRequested(turn: number, name: unknown, args: unknown) {
       emit("follow_up.tool_requested", { turn, tool: typeof name === "string" && toolNames.has(name) ? name : "unknown", argumentsShape: argumentsShape(args) });
     },
-    async modelRequest<T extends { status?: unknown; usage?: unknown }>(turn: number, operation: () => Promise<T>): Promise<T> {
+    retryScheduled(turn: number, attempt: number, backoffMs: number, error: unknown) {
+      emit("follow_up.model_retry", { turn, attempt, backoffMs, error: safeTraceError(error) });
+    },
+    async modelRequest<T extends { status?: unknown; usage?: unknown }>(turn: number, operation: () => Promise<T>, attempt = 1): Promise<T> {
       phase = "model_request";
       modelRequests++;
+      modelTurns = Math.max(modelTurns, turn);
       const start = performance.now();
-      emit("follow_up.model_started", { turn });
+      emit("follow_up.model_started", { turn, attempt });
       try {
         const result = await operation();
         const allowedStatuses = ["completed", "requires_action", "in_progress", "failed", "cancelled", "incomplete", "budget_exceeded", "queued"];
         const usage = safeUsage(result.usage);
-        emit("follow_up.model_finished", { turn, durationMs: Math.round(performance.now() - start), result: typeof result.status === "string" && allowedStatuses.includes(result.status) ? result.status : "unknown", ...(usage ? { usage } : {}) });
+        emit("follow_up.model_finished", { turn, attempt, durationMs: Math.round(performance.now() - start), result: typeof result.status === "string" && allowedStatuses.includes(result.status) ? result.status : "unknown", ...(usage ? { usage } : {}) });
         return result;
       } catch (error) {
         const detail = safeTraceError(error);
-        emit("follow_up.model_finished", { turn, durationMs: Math.round(performance.now() - start), result: detail.kind === "timeout" ? "timeout" : "provider_error", error: detail });
+        emit("follow_up.model_finished", { turn, attempt, durationMs: Math.round(performance.now() - start), result: detail.kind === "timeout" ? "timeout" : "provider_error", error: detail });
         throw error;
       }
     },
@@ -86,7 +90,7 @@ export function createFollowUpTrace(model: string, sink: (event: RecordData) => 
     finish(outcome: "completed" | "failed" | "unauthenticated" | "forbidden" | "not_found", error?: unknown) {
       if (finished) return;
       finished = true;
-      emit("follow_up.run_finished", { outcome, phase, totalDurationMs: Math.round(performance.now() - started), modelRequests, toolExecutions, ...(error === undefined ? {} : { error: safeTraceError(error) }) });
+      emit("follow_up.run_finished", { outcome, phase, totalDurationMs: Math.round(performance.now() - started), modelRequests, modelTurns, toolExecutions, ...(error === undefined ? {} : { error: safeTraceError(error) }) });
     },
   };
 }

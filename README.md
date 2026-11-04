@@ -112,7 +112,11 @@ sends a message. V1 `/analyze` is unchanged.
 
 The server uses the installed `@google/genai` Interactions API with model
 `gemini-3.8-flash`, not a managed agent. Conversation history is request-local:
-`store: false`, no previous interaction ID, no background tasks or retries.
+`store: false`, no previous interaction ID and no background tasks. SDK retries
+remain disabled; a server-side wrapper retries each individual model request at
+most once after a fixed one-second backoff, only for HTTP 429, HTTP 503 or a
+recognized request timeout. Each attempt receives a fresh 90-second signal and
+SDK timeout. Output validation and tools are outside the retry boundary.
 
 The explicit loop is:
 
@@ -125,9 +129,9 @@ The explicit loop is:
 
 Tool selection is model-driven: sufficient context gathering is strongly encouraged,
 but a valid final response is accepted after zero, some, or all tools. Each tool
-may run at most once, together with other tools or sequentially. Limits: four model requests, three tool
-executions total, 1,200 output tokens per model request, 30-second request timeout
-and a 90-second overall model-loop deadline. Repeated calls, unexpected/managed
+may run at most once, together with other tools or sequentially. Limits: four
+logical model turns (at most eight physical attempts), three tool executions total,
+1,200 output tokens per request and a fresh 90-second timeout per attempt. Repeated calls, unexpected/managed
 tools, supplied arguments, incomplete replies and invalid output fail safely.
 
 Tool scope:
@@ -152,4 +156,20 @@ closed if the provider changes its response shape.
 
 ```bash
 node --test tests/admin-auth.test.mjs tests/lead-analysis.test.mjs tests/lead-follow-up.test.mjs
+```
+
+## Follow-up regression evaluations (J4)
+
+See [the evaluation guide](evals/follow-up/README.md) for the 18 synthetic cases,
+offline checks, and explicitly opted-in live evaluator. Offline tests never call
+Gemini or Supabase; live evaluation is not part of ordinary CI.
+
+
+Follow-up retry tracing includes `turn` and `attempt` on model events, plus a
+`follow_up.model_retry` event with sanitized error classification and backoff.
+Terminal `modelRequests` counts physical attempts; `modelTurns` counts logical
+turns. Retry tests run offline with an injected wait and mocked provider responses:
+
+```bash
+node --test tests/lead-follow-up-retry.test.mjs
 ```

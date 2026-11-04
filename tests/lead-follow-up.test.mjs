@@ -15,6 +15,7 @@ function load(file, dependencies) {
   return exports;
 }
 const tracing = load("src/lib/ai/follow-up-trace.ts", { "server-only": {} });
+const retry = load("src/lib/ai/follow-up-retry.ts", { "server-only": {}, "node:timers/promises": { setTimeout: async () => {} } });
 const schema = load("src/lib/ai/follow-up-schema.ts", { zod: require("zod") });
 const v1Schema = load("src/lib/ai/lead-analysis-schema.ts", { zod: require("zod") });
 const id = "12345678-1234-1234-1234-123456789abc";
@@ -39,7 +40,7 @@ function toolFixture({ missing = false, noAnalysis = false, dbError = false } = 
   } }; } };
   const loaded = load("src/lib/ai/follow-up-tools.ts", {
     "server-only": {}, zod: require("zod"), "@/lib/supabase-server": { getSupabaseServer: () => client },
-    "./lead-analysis-schema": v1Schema, "./follow-up-schema": schema, "./follow-up-trace": tracing,
+    "./lead-analysis-schema": v1Schema, "./follow-up-schema": schema, "./follow-up-trace": tracing, "./follow-up-retry": retry,
   });
   return { ...loaded, queries };
 }
@@ -92,7 +93,7 @@ async function runScript(script, execute = async (name) => ({ tool: name }), ins
       assert.deepEqual(options.retries, { strategy: "none" });
       assert.ok(!params.agent && !params.previous_interaction_id);
       requests.push(structuredClone(params));
-      inspectRequest(options, requests.length);
+      inspectRequest(options, requests.length, params);
       assert.ok(script.length, "Unbounded/extra model request");
       const next = script.shift();
       if (next instanceof Error) throw next;
@@ -100,7 +101,7 @@ async function runScript(script, execute = async (name) => ({ tool: name }), ins
     } }; }
   }
   const loaded = load("src/lib/ai/follow-up-agent.ts", {
-    "server-only": {}, zod: require("zod"), "@google/genai": { GoogleGenAI }, "./follow-up-schema": schema, "./follow-up-trace": tracing,
+    "server-only": {}, zod: require("zod"), "@google/genai": { GoogleGenAI }, "./follow-up-schema": schema, "./follow-up-trace": tracing, "./follow-up-retry": retry,
   });
   try {
     return { result: await loaded.runFollowUpAgent(execute), requests };
@@ -256,7 +257,7 @@ test("installed SDK preserves stateless steps and function results in a complete
   };
   try {
     const { runFollowUpAgent } = load("src/lib/ai/follow-up-agent.ts", {
-      "server-only": {}, zod: require("zod"), "@google/genai": { GoogleGenAI }, "./follow-up-schema": schema, "./follow-up-trace": tracing,
+      "server-only": {}, zod: require("zod"), "@google/genai": { GoogleGenAI }, "./follow-up-schema": schema, "./follow-up-trace": tracing, "./follow-up-retry": retry,
     });
     assert.deepEqual(await runFollowUpAgent(async () => ({ found: false, analysis: null })), final);
     assert.equal(requests, 2);
@@ -295,4 +296,16 @@ test("each model turn gets a fresh signal even when the preceding signal has exp
   } finally {
     timeoutMock.mock.restore();
   }
+});
+
+
+test("prompt asks for materially missing budget in the customer follow-up rather than summary alone", async () => {
+  await runScript([done()], undefined, (_options, _turn, params) => {
+    const instruction = params.system_instruction;
+    assert.match(instruction, /budget est absent ou non défini/);
+    assert.match(instruction, /matériellement nécessaire/);
+    assert.match(instruction, /recommendedAction ou suggestedReply/);
+    assert.match(instruction, /résumé ou la justification ne suffit pas/);
+    assert.match(instruction, /ni en promesse de devis/);
+  });
 });
