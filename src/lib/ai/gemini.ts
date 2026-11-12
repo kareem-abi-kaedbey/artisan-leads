@@ -3,7 +3,7 @@ import "server-only";
 import { GoogleGenAI } from "@google/genai";
 import { LeadAnalysisSchema, leadAnalysisJsonSchema } from "./lead-analysis-schema";
 
-export const LEAD_ANALYSIS_MODEL = "gemini-3.8-flash";
+export const LEAD_ANALYSIS_MODEL = "gemini-3.5-flash-lite";
 
 export type AnalysisLead = {
   project_type: string | null;
